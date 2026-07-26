@@ -17,10 +17,6 @@ type createRequest struct {
 	business.ProductData
 }
 
-type listRequest struct {
-	Query crud.Query
-}
-
 func DecodeCreateRequest(_ context.Context, r *http.Request) (any, error) {
 	var req createRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -33,11 +29,11 @@ func DecodeListRequest(_ context.Context, r *http.Request) (any, error) {
 	if r.ContentLength == 0 {
 		return crud.Query{}, nil
 	}
-	var req listRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var query crud.Query
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
 		return nil, err
 	}
-	return req.Query, nil
+	return query, nil
 }
 
 func DecodeIDRequest(_ context.Context, r *http.Request) (any, error) {

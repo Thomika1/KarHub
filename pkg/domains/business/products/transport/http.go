@@ -47,7 +47,7 @@ func NewHTTPHandler(svc products.ServiceI) http.Handler {
 	)
 
 	r.Post("/", create.ServeHTTP)
-	r.Get("/", list.ServeHTTP)
+	r.Post("/", list.ServeHTTP)
 	r.Get("/{id}", get.ServeHTTP)
 	r.Put("/{id}", update.ServeHTTP)
 	r.Delete("/{id}", delete.ServeHTTP)
