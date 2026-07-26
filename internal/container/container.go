@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/Thomika1/KarHub/pkg/domains/business/products"
 	"gorm.io/gorm"
 )
 
@@ -13,6 +14,7 @@ type components struct {
 }
 
 type services struct {
+	ProductService products.ServiceI
 }
 
 type Dependency struct {

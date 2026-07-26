@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Thomika1/KarHub/internal/container"
+	productTransport "github.com/Thomika1/KarHub/pkg/domains/business/products/transport"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 )
@@ -20,6 +21,10 @@ func Handler(ctx context.Context, dep *container.Dependency) http.Handler {
 	}))
 
 	// Routes
+
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Mount("/product", productTransport.NewHTTPHandler(dep.Services.ProductService))
+	})
 
 	return r
 }

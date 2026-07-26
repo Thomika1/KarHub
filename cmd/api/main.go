@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -21,7 +22,7 @@ func main() {
 	// Init container
 	dep, err := container.New(ctx)
 	if err != nil {
-		dep.Components.Logger.Error("Cannot initialize container", "err", err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
@@ -44,7 +45,7 @@ func main() {
 	}
 
 	go func() {
-		logger.Info("Server listening on :8080")
+		logger.Info("Server listening", "port", port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("Server failed", "err", err)
 			os.Exit(1)

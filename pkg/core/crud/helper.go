@@ -1,43 +1,61 @@
 package crud
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"gorm.io/gorm"
 )
 
-type Filter struct {
-	field    string
-	Value    any
-	Operator string // "=", ">", "<", ">=", "<=", "LIKE", "IN"
+type Query struct {
+	Page           int
+	PageSize       int
+	OrderBy        string
+	OrderDirection string
+	Filters        []Filter
 }
 
-func (r *Repository) ApplyPreloads(query *gorm.DB, filter Query) *gorm.DB {
-	return query
+type Filter struct {
+	Field    string `json:"field"`
+	Value    any    `json:"value"`
+	Operator string `json:"operator"` // "=", ">", "<", ">=", "<=", "LIKE", "IN"
+}
+
+func (q Query) IsValid() error {
+	if q.Page < 0 {
+		return errors.New("page must be non-negative")
+	}
+	if q.PageSize < 0 || q.PageSize > 100 {
+		return errors.New("page_size must be between 0 and 100")
+	}
+	if q.OrderDirection != "" && q.OrderDirection != "asc" && q.OrderDirection != "desc" {
+		return errors.New("order_direction must be 'asc' or 'desc'")
+	}
+	for _, f := range q.Filters {
+		if f.Field == "" {
+			return errors.New("filter column cannot be empty")
+		}
+	}
+	return nil
 }
 
 func (r *Repository) ApplyFilters(query *gorm.DB, filters []Filter) *gorm.DB {
 	for _, f := range filters {
-		if f.field == "" || f.Operator == "" {
+		if f.Field == "" || f.Operator == "" {
 			continue
 		}
 
 		op := strings.ToUpper(f.Operator)
 		switch op {
 		case "LIKE":
-			query = query.Where(fmt.Sprintf("%s LIKE ?", f.field), fmt.Sprintf("%%%s%%", f.Value))
+			query = query.Where(fmt.Sprintf("%s LIKE ?", f.Field), fmt.Sprintf("%%%s%%", f.Value))
 		case "IN":
-			query = query.Where(f.field+" IN (?)", f.Value)
+			query = query.Where(f.Field+" IN (?)", f.Value)
 		default:
-			query = query.Where(fmt.Sprintf("%s %s ?", f.field, op), f.Value)
+			query = query.Where(fmt.Sprintf("%s %s ?", f.Field, op), f.Value)
 		}
 	}
-	return query
-}
-
-func (r *Repository) ApplyOrganizationFilter(ctx context.Context, entities any, query *gorm.DB) *gorm.DB {
 	return query
 }
 
