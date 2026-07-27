@@ -46,21 +46,11 @@ func NewHTTPHandler(svc products.ServiceI) http.Handler {
 		kithttp.ServerErrorEncoder(ErrorEncoder),
 	)
 
-	priorities := kithttp.NewServer(
-		products.Priorities(svc),
-		DecodeListRequest,
-		kithttp.EncodeJSONResponse,
-		kithttp.ServerErrorEncoder(ErrorEncoder),
-	)
-
 	r.Post("/", create.ServeHTTP)
-	r.Post("/", list.ServeHTTP)
+	r.Post("/list", list.ServeHTTP)
 	r.Get("/{id}", get.ServeHTTP)
 	r.Put("/{id}", update.ServeHTTP)
 	r.Delete("/{id}", delete.ServeHTTP)
-	r.Route("/restock", func(r chi.Router) {
-		r.Post("/priorities", priorities.ServeHTTP)
-	})
 
 	return r
 }

@@ -1,180 +1,214 @@
-# 🚚 Desafio Backend – Motor de Priorização de Reposição de Estoque
+# KarHub - Restock Prioritization Engine
 
-## 🧩 Contexto
+Go microservice for restock prioritization of auto parts. Calculates urgency scores to prioritize which products need restocking first.
 
-Somos um distribuidor de autopeças. Diariamente precisamos decidir **quais peças devem ser priorizadas para reposição**, considerando:
+## Tech Stack
 
-- Estoque limitado
-- Capital de giro limitado
-- Diferentes níveis de criticidade
-- Padrões de venda distintos
-- Tempo de reposição do fornecedor
+- Go 1.26.5
+- chi router
+- go-kit endpoints
+- GORM + pgx (PostgreSQL)
+- slog (structured logging)
+- go-playground/validator
 
-O objetivo é construir um microserviço capaz de:
+## Prerequisites
 
-1. Gerenciar peças em estoque
-2. Calcular automaticamente quais peças devem ser priorizadas para reposição
-3. Ordenar as peças por nível de urgência
+- Go 1.26+
+- PostgreSQL
 
----
+## Setup
 
-# 🛠️ Requisitos Funcionais
+### 1. Clone and install dependencies
 
-## 1️⃣ CRUD de Peças
+```bash
+git clone https://github.com/Thomika1/KarHub.git
+cd KarHub
+go mod download
+```
 
-Criar uma API para:
+### 2. Environment variables
 
-- Criar peça
-- Listar peças
-- Atualizar peça
-- Remover peça
-- Buscar por categoria (opcional)
+Create a `.env` file:
 
-### 📦 Estrutura da Entidade
+```env
+PORT=8080
+DB_ENGINE=postgres
+DB_DSN="host=localhost port=5432 user=postgres password=postgres dbname=karhub sslmode=disable"
+```
 
+### 3. Database
+
+Create the database:
+
+```bash
+psql -U postgres -c "CREATE DATABASE karhub-db;"
+```
+
+### 4. Run
+
+```bash
+go run cmd/api/main.go
+```
+
+Server starts at `http://localhost:8080`
+
+## API Endpoints
+
+Base path: `/api/v1`
+
+### Products
+
+#### Create Product
+
+```bash
+curl -X POST http://localhost:8080/api/v1/product \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Filtro de Óleo",
+    "category": "filters",
+    "currentStock": 15,
+    "minimumStock": 20,
+    "averageDailySales": 3,
+    "leadTimeDays": 7,
+    "unitCost": 1850,
+    "criticalityLevel": 3
+  }'
+```
+
+Response:
 ```json
 {
-  "id": "uuid",
-  "name": "Filtro de Óleo X",
-  "category": "engine",
+  "id": "abc123...",
+  "name": "Filtro de Óleo",
+  "category": "filters",
   "currentStock": 15,
   "minimumStock": 20,
-  "averageDailySales": 4,
-  "leadTimeDays": 5,
-  "unitCost": 18.50,
-  "criticalityLevel": 3
+  "averageDailySales": 3,
+  "leadTimeDays": 7,
+  "unitCost": 1850,
+  "criticalityLevel": 3,
+  "createdAt": "2026-07-27T10:00:00Z",
+  "updatedAt": "2026-07-27T10:00:00Z"
 }
 ```
 
-## 📝 Descrição dos Campos
+#### Get Product by ID
 
-| Campo | Descrição |
-|--------|------------|
-| `currentStock` | Estoque atual disponível |
-| `minimumStock` | Estoque mínimo desejado |
-| `averageDailySales` | Média de vendas por dia |
-| `leadTimeDays` | Tempo (em dias) que o fornecedor demora para entregar a peça |
-| `unitCost` | Custo unitário da peça |
-| `criticalityLevel` | Nível de criticidade (1 a 5) |
+```bash
+curl http://localhost:8080/api/v1/product/{id}
+```
 
----
+#### List Products (with filters, pagination, ordering)
 
-## 🧠 Endpoint de Priorização
+```bash
+curl -X POST http://localhost:8080/api/v1/product/list \
+  -H "Content-Type: application/json" \
+  -d '{
+    "page": 0,
+    "pageSize": 10,
+    "orderBy": "name",
+    "orderDirection": "asc",
+    "filters": [
+      {
+        "field": "name",
+        "value": "Filtro",
+        "operator": "LIKE"
+      }
+    ]
+  }'
+```
 
-Criar o endpoint:
+#### Update Product (partial)
 
-```GET /restock/priorities```
+```bash
+curl -X PUT http://localhost:8080/api/v1/product/{id} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "currentStock": 25,
+    "minimumStock": 30
+  }'
+```
 
-Esse endpoint deve retornar as peças ordenadas por prioridade de reposição.
+Only provided fields are updated.
 
----
+#### Delete Product
 
-## 📐 Regras de Negócio
+```bash
+curl -X DELETE http://localhost:8080/api/v1/product/{id}
+```
 
-### 1️⃣ Calcular Consumo Esperado Durante o Lead Time
+### Restock Priorities
 
-```expectedConsumption = averageDailySales * leadTimeDays```
+#### Get Priorities
 
----
+Calculates urgency score: `(minimum_stock - projected_stock) * criticality_level`
+where `projected_stock = current_stock - (average_daily_sales * lead_time_days)`
 
-### 2️⃣ Calcular Estoque Projetado
+```bash
+curl -X POST http://localhost:8080/api/v1/restock/priorities \
+  -H "Content-Type: application/json" \
+  -d '{
+    "page": 0,
+    "pageSize": 10
+  }'
+```
 
-```projectedStock = currentStock - expectedConsumption```
-
----
-
-### 3️⃣ Identificar Necessidade de Reposição
-
-Uma peça precisa de reposição quando:
-```projectedStock < minimumStock```
-
-
----
-
-### 4️⃣ Calcular Score de Prioridade
-
-O score de prioridade deve ser calculado da seguinte forma:
-
-```urgencyScore = (minimumStock - projectedStock) * criticalityLevel```
-
-
-Quanto maior o `urgencyScore`, maior a prioridade de reposição.
-
----
-
-## 🟰 Critérios de Desempate
-
-Em caso de empate no `urgencyScore`, aplicar:
-
-1. Maior `criticalityLevel`
-2. Maior `averageDailySales`
-3. Ordem alfabética pelo nome da peça
-
----
-
-## 📤 Exemplo de Resposta
-
+Response:
 ```json
 {
   "priorities": [
     {
-      "partId": "uuid-1",
-      "name": "Filtro de Óleo X",
+      "partId": "abc123...",
+      "name": "Filtro de Óleo",
       "currentStock": 15,
-      "projectedStock": 5,
+      "projectedStock": -6,
       "minimumStock": 20,
-      "urgencyScore": 45
+      "urgencyScore": 78
     },
     {
-      "partId": "uuid-2",
-      "name": "Pastilha de Freio Y",
+      "partId": "def456...",
+      "name": "Pastilha de Freio",
       "currentStock": 8,
-      "projectedStock": -2,
+      "projectedStock": -12,
       "minimumStock": 10,
-      "urgencyScore": 36
+      "urgencyScore": 110
     }
   ]
 }
 ```
 
-### 📌 Regras Gerais
+Results are ordered by `urgencyScore DESC`, `criticalityLevel DESC`, `averageDailySales DESC`, `name ASC`.
 
-- Não utilizar APIs externas.
-- O sistema deve estar preparado para suportar centenas ou milhares de peças.
-- A solução deve permitir futura troca de banco de dados.
-- O cálculo de prioridade deve estar isolado da camada HTTP.
-- Tratar corretamente casos de estoque negativo.
+## Categories
 
-### 🎯 O Que Será Avaliado
-- 🧠 Modelagem de Domínio
-- Clareza das entidades
-- Separação de responsabilidades
-- Organização das regras de negócio
+Valid values for `category` field:
+- `engine`
+- `brakes`
+- `suspension`
+- `transmission`
+- `electrical`
+- `cooling`
+- `filters`
+- `injection`
+- `lighting`
 
-### 🧪 Testes
-- Testes unitários do cálculo de prioridade
-- Testes de cenários extremos (estoque negativo, venda zero, lead time alto)
+## Validation Rules
 
-### 🏗️ Arquitetura
-- Uso adequado de camadas (ex: Controller, Service, Domain, Repository)
-- Código limpo e organizado
-- Facilidade de manutenção
+| Field | Rule |
+|---|---|
+| `name` | required |
+| `category` | required, must be valid enum |
+| `currentStock` | >= 0 |
+| `minimumStock` | >= 0 |
+| `averageDailySales` | >= 0 |
+| `leadTimeDays` | >= 0 |
+| `unitCost` | >= 0 |
+| `criticalityLevel` | 1-5 |
 
-### 🧰 Tecnologias
+## Error Responses
 
-Pode ser desenvolvido utilizando:
-
-- Node.js (com TypeScript)
-- Golang
-- Frameworks e bibliotecas são livres
-
-### 📄 Entrega
-
-O projeto deve conter:
-
-- Código-fonte organizado
-- README com instruções para rodar localmente
-- Exemplos de requisição
-- Testes automatizados
-
-Boa implementação 🚀
+| Status | Type | Description |
+|---|---|---|
+| 400 | ValidationError | Invalid field value |
+| 409 | ConflictError | Duplicate product (same name + category) |
+| 500 | Internal | Server error |

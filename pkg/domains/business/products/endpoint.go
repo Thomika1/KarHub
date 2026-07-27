@@ -80,14 +80,3 @@ func Delete(svc ServiceI) endpoint.Endpoint {
 		return map[string]string{"id": id}, nil
 	}
 }
-
-func Priorities(svc ServiceI) endpoint.Endpoint {
-	return func(ctx context.Context, request any) (any, error) {
-		query, ok := request.(crud.Query)
-		if !ok {
-			return nil, errors.New("invalid request")
-		}
-
-		return svc.Priorities(ctx, query)
-	}
-}

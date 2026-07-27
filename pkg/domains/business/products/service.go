@@ -60,11 +60,3 @@ func (s *Service) Update(ctx context.Context, id string, data *business.ProductD
 func (s *Service) Delete(ctx context.Context, id string) error {
 	return s.repository.Delete(ctx, &business.Product{}, id)
 }
-
-func (s *Service) Priorities(ctx context.Context, parameters crud.Query) ([]business.Product, error) {
-	var products []business.Product
-
-	s.domainRepository.Priorities(ctx, parameters)
-
-	return products, nil
-}

@@ -13,8 +13,8 @@ var validate = validator.New()
 type Product struct {
 	crud.BaseModel
 	ProductData
-	UrgencyScore  *int `json:"urgencyScore,omitempty" gorm:"column:urgency_score"`
-	ProjectedStock *int `json:"projectedStock,omitempty" gorm:"column:projected_stock"`
+	UrgencyScore   *int `json:"urgencyScore,omitempty" gorm:"->;column:urgency_score"`
+	ProjectedStock *int `json:"projectedStock,omitempty" gorm:"->;column:projected_stock"`
 }
 
 type ProductData struct {

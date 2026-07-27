@@ -50,12 +50,7 @@ func setupProductService(ctx context.Context, svc *services, cmp *components) (*
 		return nil, err
 	}
 
-	productDomainRepository, err := products.NewDomainRepository(cmp.Database)
-	if err != nil {
-		return nil, err
-	}
-
-	service, err := products.NewService(productRepository, cmp.Logger, productDomainRepository)
+	service, err := products.NewService(productRepository, cmp.Logger)
 	if err != nil {
 		return nil, err
 	}
