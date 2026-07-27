@@ -177,6 +177,14 @@ Response:
 }
 ```
 
+## Tests
+
+To run tests:
+
+```bash
+go test ./...
+```
+
 Results are ordered by `urgencyScore DESC`, `criticalityLevel DESC`, `averageDailySales DESC`, `name ASC`.
 
 ## Categories
