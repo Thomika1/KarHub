@@ -33,7 +33,7 @@ Create a `.env` file:
 ```env
 PORT=8080
 DB_ENGINE=postgres
-DB_DSN="host=localhost port=5432 user=postgres password=postgres dbname=karhub sslmode=disable"
+DB_DSN="host=localhost port=5432 user=postgres password=postgres dbname=karhub-db sslmode=disable"
 ```
 
 ### 3. Database
