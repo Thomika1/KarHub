@@ -5,6 +5,7 @@ import (
 
 	"github.com/Thomika1/KarHub/pkg/core/crud"
 	"github.com/Thomika1/KarHub/pkg/domains/business/products"
+	"github.com/Thomika1/KarHub/pkg/domains/business/restock"
 	"github.com/Thomika1/KarHub/pkg/domains/shared/models/business"
 )
 
@@ -34,6 +35,12 @@ func setupBusinessServices(ctx context.Context, svc *services, cmp *components) 
 	}
 	svc.ProductService = service
 
+	serviceRestock, err := setupRestockService(ctx, svc, cmp)
+	if err != nil {
+		return err
+	}
+	svc.RestockService = serviceRestock
+
 	return nil
 }
 
@@ -43,10 +50,34 @@ func setupProductService(ctx context.Context, svc *services, cmp *components) (*
 		return nil, err
 	}
 
-	service, err := products.NewService(productRepository, cmp.Logger)
+	productDomainRepository, err := products.NewDomainRepository(cmp.Database)
+	if err != nil {
+		return nil, err
+	}
+
+	service, err := products.NewService(productRepository, cmp.Logger, productDomainRepository)
 	if err != nil {
 		return nil, err
 	}
 
 	return service, nil
+}
+
+func setupRestockService(ctx context.Context, svc *services, cmp *components) (*restock.Service, error) {
+	restockRepository, err := crud.NewRepository(cmp.Database, crud.OnlyCreate, business.Product{})
+	if err != nil {
+		return nil, err
+	}
+
+	restockDomainRepository, err := restock.NewDomainRepository(cmp.Database)
+	if err != nil {
+		return nil, err
+	}
+
+	restockService, err := restock.NewService(restockRepository, cmp.Logger, restockDomainRepository)
+	if err != nil {
+		return nil, err
+	}
+
+	return restockService, nil
 }

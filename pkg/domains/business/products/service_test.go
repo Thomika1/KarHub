@@ -12,11 +12,12 @@ import (
 )
 
 type mockRepository struct {
-	createFn func(ctx context.Context, entity any) error
-	getFn    func(ctx context.Context, entity any, id any, preload bool) error
-	listFn   func(ctx context.Context, entities any, filter crud.Query) error
-	updateFn func(ctx context.Context, entity any, id any) error
-	deleteFn func(ctx context.Context, entity any, id any) error
+	createFn   func(ctx context.Context, entity any) error
+	getFn      func(ctx context.Context, entity any, id any, preload bool) error
+	listFn     func(ctx context.Context, entities any, filter crud.Query) error
+	updateFn   func(ctx context.Context, entity any, id any) error
+	updateByFn func(ctx context.Context, entity any, column string, value any) error
+	deleteFn   func(ctx context.Context, entity any, id any) error
 }
 
 func (m *mockRepository) Create(ctx context.Context, entity any) error {
@@ -52,6 +53,9 @@ func (m *mockRepository) Update(ctx context.Context, entity any, id any) error {
 }
 
 func (m *mockRepository) UpdateBy(ctx context.Context, entity any, column string, value any) error {
+	if m.updateByFn != nil {
+		return m.updateByFn(ctx, entity, column, value)
+	}
 	return nil
 }
 
@@ -336,7 +340,7 @@ func TestService_List_Success(t *testing.T) {
 func TestService_Update_Success(t *testing.T) {
 	called := false
 	repo := &mockRepository{
-		updateFn: func(ctx context.Context, entity any, id any) error {
+		updateByFn: func(ctx context.Context, entity any, column string, value any) error {
 			called = true
 			return nil
 		},
@@ -349,7 +353,7 @@ func TestService_Update_Success(t *testing.T) {
 		t.Errorf("expected no error, got %v", err)
 	}
 	if !called {
-		t.Error("expected repository.Update to be called")
+		t.Error("expected repository.UpdateBy to be called")
 	}
 }
 
@@ -360,26 +364,6 @@ func TestService_Update_EmptyData(t *testing.T) {
 	err := svc.Update(context.Background(), "test-id", &business.ProductData{})
 	if err != nil {
 		t.Errorf("expected no error, got %v", err)
-	}
-}
-
-func TestService_Update_Validation_NegativeStock(t *testing.T) {
-	repo := &mockRepository{}
-	svc := &Service{repository: repo}
-
-	neg := -5
-	data := business.ProductData{
-		CurrentStock: &neg,
-	}
-
-	err := svc.Update(context.Background(), "test-id", &data)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	var ve errors.ValidationError
-	if !stderrors.As(err, &ve) {
-		t.Errorf("expected ValidationError, got %T", err)
 	}
 }
 

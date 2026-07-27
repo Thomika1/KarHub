@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/Thomika1/KarHub/pkg/domains/business/products"
+	"github.com/Thomika1/KarHub/pkg/domains/business/restock"
 	"gorm.io/gorm"
 )
 
@@ -15,6 +16,7 @@ type components struct {
 
 type services struct {
 	ProductService products.ServiceI
+	RestockService restock.ServiceI
 }
 
 type Dependency struct {

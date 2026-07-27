@@ -14,16 +14,19 @@ type ServiceI interface {
 	List(context.Context, crud.Query) ([]business.Product, error)
 	Update(context.Context, string, *business.ProductData) error
 	Delete(context.Context, string) error
+	Priorities(context.Context, crud.Query) ([]business.Product, error)
 }
 
 type Service struct {
-	repository crud.RepositoryI
-	logger     slog.Logger
+	repository       crud.RepositoryI
+	logger           slog.Logger
+	domainRepository DomainRepository
 }
 
-func NewService(repository crud.RepositoryI, logger *slog.Logger) (*Service, error) {
+func NewService(repository crud.RepositoryI, logger *slog.Logger, domainRepository DomainRepository) (*Service, error) {
 	return &Service{
-		repository: repository,
-		logger:     *logger,
+		repository:       repository,
+		logger:           *logger,
+		domainRepository: domainRepository,
 	}, nil
 }
