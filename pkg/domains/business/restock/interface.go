@@ -12,13 +12,17 @@ type ServiceI interface {
 	Priorities(context.Context, crud.Query) ([]business.Product, error)
 }
 
+type DomainRepository interface {
+	Priorities(context.Context, crud.Query) ([]business.Product, error)
+}
+
 type Service struct {
 	repository       crud.RepositoryI
 	logger           *slog.Logger
-	domainRepository *domainRepository
+	domainRepository DomainRepository
 }
 
-func NewService(repository crud.RepositoryI, logger *slog.Logger, domainRepository *domainRepository) (*Service, error) {
+func NewService(repository crud.RepositoryI, logger *slog.Logger, domainRepository DomainRepository) (*Service, error) {
 	return &Service{
 		repository:       repository,
 		logger:           logger,

@@ -8,10 +8,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type DomainRepository interface {
-	Priorities(context.Context, crud.Query) ([]business.Product, error)
-}
-
 type domainRepository struct {
 	db *gorm.DB
 }
