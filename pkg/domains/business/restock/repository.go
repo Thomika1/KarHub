@@ -21,6 +21,7 @@ func (r *domainRepository) Priorities(ctx context.Context, parameters crud.Query
 
 	err := r.db.WithContext(ctx).
 		Select("*, (current_stock - (average_daily_sales * lead_time_days)) AS projected_stock, (minimum_stock - (current_stock - (average_daily_sales * lead_time_days))) * criticality_level AS urgency_score").
+		Where("(current_stock - (average_daily_sales * lead_time_days)) < minimum_stock").
 		Order("urgency_score DESC, criticality_level DESC, average_daily_sales DESC, name ASC").
 		Limit(parameters.PageSize).
 		Offset(parameters.Page * parameters.PageSize).
